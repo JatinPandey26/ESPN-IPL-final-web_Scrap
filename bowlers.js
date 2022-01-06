@@ -1,7 +1,7 @@
 const request = require('request');
 const Cheerio = require("cheerio");
 
-let scoreCardURL = "https://www.espn.in/cricket/series/8048/scorecard/1254116/delhi-capitals-vs-kolkata-knight-riders-qualifier-2-indian-premier-league-2021";
+let scoreCardURL = "https://www.espn.in/cricket/series/8048/scorecard/1254117/chennai-super-kings-vs-kolkata-knight-riders-final-indian-premier-league-2021";
 request(scoreCardURL, cb);
 
 function cb(error, response, html) {
