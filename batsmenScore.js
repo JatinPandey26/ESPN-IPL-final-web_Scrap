@@ -12,7 +12,33 @@ const request = require('request');
 const cheerio = require('cheerio');
 const xlsx = require('xlsx');
 const fs = require('fs');
-let url = "https://www.espncricinfo.com/series/ipl-2021-1249214/delhi-capitals-vs-kolkata-knight-riders-qualifier-2-1254116/full-scorecard";
+const path = require('path');
+
+
+
+let mainUrl = "https://www.espncricinfo.com/series/ipl-2021-1249214/match-results";
+
+request(mainUrl,cb);
+
+function cb(error, response, html) {
+    if (!error) {
+
+        let selTool = cheerio.load(html);
+
+        let match_list = selTool('.card.content-block.league-scores-container .match-score-block' ).find('.match-info-link-FIXTURES');
+        let cnt = 0;
+        for(let i = 0 ; i < match_list.length ; i++){
+          
+            let url = selTool(match_list[i]).attr('href');
+            console.log(url);
+            if(url.charAt(0) == '/') cnt++;
+            // eachMatchSummary(url);
+        }
+        console.log(cnt);
+    }
+}
+function eachMatchSummary(url){
+
 
 request(url, cb);
 
@@ -23,18 +49,19 @@ function cb(error, response, html) {
         getBatsmenScore($);
     }
 }
-
+let Match = "";
 function getBatsmenScore($) {
 
     let teams = $(".match-info.match-info-MATCH.match-info-MATCH-half-width .teams .team");
-
+    
     let winningTeamName;
 
     for (let i = 0; i < teams.length; i++) {
-
+            let teamsArr =  $(teams[i]).find('.name-detail .name-link');
+            Match += teamsArr.text() + " ";
         if ($(teams[i]).hasClass('team-gray') == false) {
             let contentArr = $(teams[i]).find('.name-detail .name-link');
-
+            
             let data = contentArr.text();
             winningTeamName = data;
         }
@@ -52,7 +79,7 @@ function getBatsmenScore($) {
 
         if (dataArray[0].trim() == winningTeamName) {              // got winning team section
 
-            console.log(dataArray[0]);
+           
             let batsmenTableHead = $(teamsCollapseCard[i]).find('.table.batsman thead tr th'); // header of stats
             let batsmenTable = $(teamsCollapseCard[i]).find('.table.batsman tbody tr');        // player stat row
 
@@ -84,23 +111,35 @@ function getBatsmenScore($) {
 // console.log(playersObjectArray);
     }
 //    console.log(playersObjectArray);
+Match = Match.split(" ").join("_");  
    writeInExcelFile(playersObjectArray);
+
 
 }
 
 function writeInExcelFile(playersObjectArray){
 
-let stringData = JSON.stringify(playersObjectArray);
-fs.writeFileSync('./stats.json',stringData);
+
 
 // writing xlxs 
-let data = require('./stats.json');
+
+if(fs.existsSync('Match_Summary') == false) fs.mkdirSync("Match_Summary");
+let subFolderPath = path.join(__dirname,'Match_Summary',Match);
+if(fs.existsSync(subFolderPath) == false) fs.mkdirSync(subFolderPath);
+
+let stringData = JSON.stringify(playersObjectArray);
+let jsonFilePath = path.join(subFolderPath,'stats.json') 
+fs.writeFileSync(jsonFilePath,stringData);
+
+let data = require(jsonFilePath);
 console.log(data);
 let wb = xlsx.utils.book_new();
 let ws = xlsx.utils.json_to_sheet(data);
 xlsx.utils.book_append_sheet(wb,ws,"stat_1");
-xlsx.writeFile(wb,"playerStats.xlsx") 
+
+let xlsxFilePath = path.join(subFolderPath,'playerStats.xlsx');
+
+xlsx.writeFile(wb,xlsxFilePath);
 
 }
-
-
+}
